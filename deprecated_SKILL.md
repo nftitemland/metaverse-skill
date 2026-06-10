@@ -1,7 +1,14 @@
 ---
-name: metaverse-agent
-description: Drive, inspect, and verify the nftmine-minter (kryptofun) 3D metaverse from an automation agent. Use when testing or screenshotting the metaverse, controlling the player or camera, asserting on what's actually rendered (avatars, roads, world-builder pieces, shapes), driving in-world UI/state, or verifying features like multiplayer presence, the World Builder, or road pieces. Triggers on requests to "test/verify/drive/screenshot the metaverse", "control the camera in the 3D world", "check what renders in-world", or to confirm an in-metaverse change works.
+name: deprecated_metaverse-agent
+description: DEPRECATED — internal staging-only dev/test harness for the kryptofun metaverse; intentionally not published as an indexable agent skill.
 ---
+
+> **⚠️ DEPRECATED — not a published/indexed skill.** This is an internal,
+> **staging-only** dev/test harness for driving the kryptofun metaverse during
+> development. It is kept here for reference only and is intentionally **not**
+> maintained or distributed as a public agent skill (the file is named
+> `deprecated_SKILL.md`, not `SKILL.md`, so skill aggregators don't index it).
+> The production AI surface is a separate, higher-level "standard usage" interface.
 
 # Metaverse Agent
 
