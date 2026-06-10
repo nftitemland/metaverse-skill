@@ -7,26 +7,37 @@ description: Drive, inspect, and verify the nftmine-minter (kryptofun) 3D metave
 
 The metaverse exposes a single, self-describing API on `window.metaverseAgent` (and a
 back-compat `window.__metaverseTest`) for automation. Drive it through the
-**chrome-devtools MCP** `evaluate_script` tool.
+**chrome-devtools MCP** `evaluate_script` tool. It is a **dev/test surface, installed
+only in staging mode** (`isStagingMode()` — localhost, `*.cloudfront.net`, `?staging`);
+it is deliberately **not present in production**.
 
-It is installed in **every environment** — localhost, staging, and production
-(kryptofun.com) — because the surface is **client-side only**: it drives the local
-camera/player and reads/writes local UI state; multiplayer presence writes stay
-HMAC-token-gated on the server. So the same scripts that verify a change on localhost
-also verify it live on kryptofun.com, and the API can never bypass any server authority.
+## Use it like a human — repeatedly, over time
+
+**This skill is not a one-shot script.** It is meant to be used **continuously across a
+session**, the same way a human plays: look → act → look again → act again. Expect to
+call it **many times** toward a goal — drive the player, open a menu, place a piece,
+inject/observe presence, screenshot, re-read state, then take the next action based on
+what you actually see. Don't assume a single call finishes the job:
+
+- **Loop.** After every action, re-observe (`world.meshes`/`count`, `state.get`,
+  `player.pos`, a screenshot) before deciding the next one — exactly like a person
+  reacting to the world in real time.
+- **Persist.** Sustained sessions are normal: keep iterating, re-`describe()` when unsure,
+  and recover from transient state instead of giving up after one call.
+- **Act human.** Prefer normal in-world actions (move, look, open UI, place/remove,
+  approach NPCs) over brittle one-off pokes — you are standing in for a player.
 
 ## Golden rules (learned the hard way)
 
-1. **localhost & staging hit the staging backend; kryptofun.com is production.**
-   `isStagingMode()` is true on any non-production host (localhost, `*.cloudfront.net`,
-   `?staging`) and routes the app's APIs to the staging backend — so you can exercise
-   the full stack locally without a deploy. The agent API itself is present on **every**
-   host (incl. prod), so the same scripts work against a live change on kryptofun.com.
+1. **localhost IS staging mode.** Any non-production host (localhost, `*.cloudfront.net`,
+   `?staging`) enables the API and points the app's APIs at the staging backend. You do
+   **not** need a deployed site to test — and the API is never on production, so test on
+   localhost/staging.
 2. **The camera is `lookAt(tx, ty, tz, dist=12, height=6)`** = frame the world point
-   (tx,ty,tz) with the eye placed `dist` back and `height` up, facing it. For an
-   explicit eye+target, use `camera.moveTo(x,y,z, tx,ty,tz)`. (It is NOT `look(yaw,pitch)`.)
-3. **Production builds don't expose `canvas.__r3f`.** Never reach the THREE scene via
-   the canvas — use `world.scene()` / `world.count()` / `world.meshes()` instead.
+   (tx,ty,tz) with the eye placed `dist` back and `height` up, facing it. For an explicit
+   eye+target, use `camera.moveTo(x,y,z, tx,ty,tz)`. (It is NOT `look(yaw,pitch)`.)
+3. **Production builds don't expose `canvas.__r3f`.** Never reach the THREE scene via the
+   canvas — use `world.scene()` / `world.count()` / `world.meshes()` instead.
 4. **Always call `describe()` first** to discover the current API (args + docs) — don't
    assume method names from memory.
 5. `meta.ready()` must be true (player controller + scene mounted) before driving.
@@ -40,7 +51,6 @@ npm run build:singleplayer:production   # type/bundle check after edits
 ```
 Then with chrome-devtools MCP: `navigate_page` → `http://localhost:8000/`
 (add `?buildBypass` to force the 🔨 World Builder chip without a builders login).
-To drive **production**, navigate to `https://kryptofun.com/` instead — the same API is there.
 
 Browser gotchas: a `beforeunload` dialog may block navigation/screenshot — `handle_dialog`
 → accept. If "browser already running", `pkill -9 -f "chrome-devtools-mcp/chrome-profile"`
@@ -74,7 +84,7 @@ const items = a.world.meshes(m => m.color === '#ff0000');  // inspect pos/color/
 a.player.pos();                 // [x,y,z] eye position
 a.player.teleport(196, 5, 0);
 a.player.hectare();             // [hx,hz]
-a.nav.toSpawn(); a.nav.toArena();   // toArena exists only in staging (the Test Arena)
+a.nav.toSpawn(); a.nav.toArena();   // toArena = the staging Test Arena
 ```
 
 **Drive UI / world state:**
@@ -103,13 +113,15 @@ by the avatar/car meshes — not `CapsuleGeometry`. Each avatar faces its report
 
 ## Verifying a feature end-to-end (example: an in-world render)
 
-1. `navigate_page` → `:8000/?buildBypass` (or `kryptofun.com`); wait for `a.meta.ready()`.
+1. `navigate_page` → `:8000/?buildBypass`; wait for `a.meta.ready()`.
 2. Put the world in the state you need (`state.set`, `ui.openBuilder`, place pieces, or
    `presence.inject` test data).
 3. Assert structurally with `world.count` / `world.meshes` (counts, colors, positions) —
    more reliable than eyeballing a screenshot.
 4. `camera.lookAt(target...)` then `take_screenshot` for a visual confirm.
 5. Clean up injected/test state (`presence.inject([])`).
+6. **Then keep going** — verification is rarely one step; loop back to (2) for the next
+   action, reacting to what you observed.
 
 ## Extending
 
@@ -121,5 +133,5 @@ when `installMetaverseAgent(...)` is called, so the core API stays generic.
 ## Portability
 
 This `SKILL.md` is self-contained — copy it into any agent's skills directory
-(e.g. `~/.claude/skills/metaverse-agent/`). It assumes only: the app running (localhost
-`:8000` or `kryptofun.com`) and the chrome-devtools MCP.
+(e.g. `~/.claude/skills/metaverse-agent/`). It assumes only: the app running on
+localhost `:8000` (staging mode) and the chrome-devtools MCP.
